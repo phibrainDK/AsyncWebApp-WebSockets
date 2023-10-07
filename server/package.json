@@ -1,0 +1,17 @@
+{
+    "name": "lambda-function",
+    "version": "1.0.0",
+    "description": "AWS Lambda Function",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"No tests specified\" && exit 0"
+    },
+    "keywords": [
+      "lambda",
+      "node",
+      "aws"
+    ],
+    "author": "Tu Nombre",
+    "license": "MIT"
+  }
+  
