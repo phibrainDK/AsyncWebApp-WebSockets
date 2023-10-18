@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:14-alpine
 
 # env environment
 # ENV NODE_ENV=production
@@ -12,5 +12,6 @@ RUN npm install
 # Copy the rest of the files into the container
 COPY . .
 
+RUN npm install --production
 # run Node.js (customize)
 CMD [ "node", "handler.js" ]

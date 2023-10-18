@@ -1,8 +1,8 @@
-terraform {
-  backend "s3" {
+# terraform {
+#   backend "s3" {
 
-  }
-}
+#   }
+# }
 
 provider "aws" {
   region = var.deploy_region

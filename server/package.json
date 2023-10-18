@@ -4,14 +4,22 @@
     "description": "AWS Lambda Function",
     "main": "index.js",
     "scripts": {
-      "test": "echo \"No tests specified\" && exit 0"
+      "test": "echo \"No tests specified\" && exit 0",
+      "start": "node index.js"
+    },
+    "dependencies": {
+      "dotenv": "^10.0.0",
+      "express": "^4.17.1"
+    },
+    "devDependencies": {
+      "aws-sdk": "^2.1101"
     },
     "keywords": [
       "lambda",
       "node",
       "aws"
     ],
-    "author": "Tu Nombre",
+    "author": "phibrain",
     "license": "MIT"
   }
   

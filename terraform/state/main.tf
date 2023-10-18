@@ -60,8 +60,8 @@ resource "aws_s3_bucket_public_access_block" "s3_acl_block" {
 
 resource "aws_dynamodb_table" "tf_state_bucket" {
   name           = var.tf_backend_dynamodb_table
-  read_capacity  = 2
-  write_capacity = 2
+  read_capacity  = 1
+  write_capacity = 1
   hash_key       = "LockID"
 
   attribute {

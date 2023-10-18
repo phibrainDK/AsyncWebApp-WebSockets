@@ -6,12 +6,13 @@ resource "aws_ecr_repository" "repo" {
 resource "null_resource" "ecr_image" {
   triggers = {
     js_files   = md5(join("", fileset("../../server/", "*.js")))
+    json_files = md5(join("", fileset("../../server/", "*.json")))
     dockerfile = md5(file("../../server/Dockerfile"))
     # data                  = md5(file("../../server/handler.js"))
   }
 
   provisioner "local-exec" {
-    command = "aws ecr get-login-password --region ${var.deploy_region} | docker login --username AWS --password-stdin ${local.account_id}.dkr.ecr.${var.deploy_region}.amazonaws.com&&cd ../../app&&docker build -t ${aws_ecr_repository.repo.repository_url}:${local.ecr_image_tag} .&&docker push ${aws_ecr_repository.repo.repository_url}:${local.ecr_image_tag}"
+    command = "aws ecr get-login-password --region ${var.deploy_region} | docker login --username AWS --password-stdin ${local.account_id}.dkr.ecr.${var.deploy_region}.amazonaws.com&&cd ../../server&&docker build -t ${aws_ecr_repository.repo.repository_url}:${local.ecr_image_tag} .&&docker push ${aws_ecr_repository.repo.repository_url}:${local.ecr_image_tag}"
   }
 }
 
@@ -46,11 +47,6 @@ data "aws_iam_policy_document" "lambda" {
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
       "logs:PutLogEvents",
-      "ec2:DescribeNetworkInterfaces",
-      "ec2:CreateNetworkInterface",
-      "ec2:DeleteNetworkInterface",
-      "ec2:DescribeInstances",
-      "ec2:AttachNetworkInterface"
     ]
     effect    = "Allow"
     resources = ["*"]
@@ -76,36 +72,33 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
 }
 
 
-resource "aws_lambda_function" "app" {
+resource "aws_lambda_function" "websockets_app" {
   depends_on = [
     null_resource.ecr_image,
-    aws_db_instance.primary_db,
-    module.vpc,
+    aws_dynamodb_table.dynamo_sessions_db,
   ]
   function_name = "${local.prefix}-be-core"
   role          = aws_iam_role.lambda.arn
-  timeout       = 900
+  timeout       = 30
   image_uri     = "${aws_ecr_repository.repo.repository_url}@${data.aws_ecr_image.lambda_image.id}"
   package_type  = "Image"
-  memory_size   = 1024
-  vpc_config {
-    subnet_ids         = module.vpc.private_subnets
-    security_group_ids = [aws_security_group.security_group_private.id]
-  }
+  memory_size   = 512
+  handler       = "handler.handler"
+  runtime       = "nodejs18.x"
+
   environment {
     variables = {
       API_URL_PREFIX      = var.api_url_prefix,
       API_VERSION         = var.api_version,
       DEPLOY_REGION       = var.deploy_region,
       ENV_STAGE           = local.stage,
-      POSTGRES_HOST       = split(":", aws_db_instance.primary_db.endpoint)[0],
-      BACKEND_BUCKET_NAME = var.backend_bucket_name
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.dynamo_sessions_db.name
     }
   }
 }
 
 resource "aws_cloudwatch_log_group" "cloudwatch" {
-  name              = "/aws/lambda/${aws_lambda_function.app.function_name}"
+  name              = "/aws/lambda/${aws_lambda_function.websockets_app.function_name}"
   retention_in_days = 0
   lifecycle {
     prevent_destroy = false
