@@ -1,38 +1,36 @@
 const AWS = require('aws-sdk');
 AWS.config.update({
-    region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    region: process.env.DEPLOY_REGION,
 });
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
-const TABLE_NAME = process.env.TABLE_NAME;
+const DYNAMODB_TABLE_NAME	 = process.env.DYNAMODB_TABLE_NAME;
 
 exports.handler = async (event) => {
-    const connectionId = event.requestContext.connectionId;
-    const body = JSON.parse(event.body);
-    const action = body.action;
-    const message = body.message;
-    console.log("connectionId : ", connectionId);
-    console.log("body : ", body);
-    console.log("action : ", action);
-    console.log("message : ", message);
+    console.log(":: we invoke the handler... ::")
     try {
-        if (action === 'connect') {
-            await storeConnectionId(connectionId, message);
+        const connectionId = event.requestContext.connectionId;
+        console.log("connectionId : ", connectionId);
+        console.log("event is : ", event);
+        const action_event = event.requestContext.routeKey;
+        if (action_event === '$connect') {
+            const ip = event.headers["X-Forwarded-For"];
+            console.log("ip is : ", ip);
+            await storeConnectionId(connectionId, ip);
             return {
                 statusCode: 200,
-                body: 'Connected.',
-                message: message
+                body: ip,
             };
-        } else if (action === 'disconnect') {
+        } else if (action_event === '$disconnect') {
             await deleteConnectionId(connectionId);
             return {
                 statusCode: 200,
                 body: 'Disconnected.',
-                message: message
             };
         } else {
+            console.log("action_event : ", action_event);
+            const message = event.body.message;
+            console.log("message : ", message);
             return {
                 statusCode: 200,
                 body: 'Message sent.',
@@ -48,7 +46,7 @@ exports.handler = async (event) => {
 async function storeConnectionId(connectionId, message) {
     const ttl = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
     const params = {
-        TableName: TABLE_NAME,
+        TableName: DYNAMODB_TABLE_NAME	,
         Item: {
             connectionId: connectionId,
             message: message,
@@ -60,7 +58,7 @@ async function storeConnectionId(connectionId, message) {
 
 async function deleteConnectionId(connectionId) {
     const params = {
-        TableName: TABLE_NAME,
+        TableName: DYNAMODB_TABLE_NAME	,
         Key: {
             connectionId: connectionId
         }

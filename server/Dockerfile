@@ -1,16 +1,8 @@
-FROM node:18-alpine
+FROM public.ecr.aws/lambda/nodejs:16
 
-# env environment
-# ENV NODE_ENV=production
 
-# file package.json and package-lock.json (or yarn.lock) in the current directory
-COPY package*.json ./
+COPY handler.js package*.json ./
+RUN npm install --omit=dev
 
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the files into the container
-COPY . .
-
-# run Node.js (customize)
-CMD [ "node", "handler.js" ]
+# Set the command to run Lambda function
+CMD [ "handler.handler" ]

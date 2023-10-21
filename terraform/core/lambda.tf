@@ -8,7 +8,7 @@ resource "null_resource" "ecr_image" {
     js_files   = md5(join("", fileset("../../server/", "*.js")))
     json_files = md5(join("", fileset("../../server/", "*.json")))
     dockerfile = md5(file("../../server/Dockerfile"))
-    # data                  = md5(file("../../server/handler.js"))
+    # data       = md5(file("../../server/handler.js"))
   }
 
   provisioner "local-exec" {
@@ -100,7 +100,7 @@ resource "aws_lambda_function" "websockets_app" {
       API_VERSION         = var.api_version,
       DEPLOY_REGION       = var.deploy_region,
       ENV_STAGE           = local.stage,
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.dynamo_sessions_db.name
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.dynamo_sessions_db.name,
     }
   }
 }

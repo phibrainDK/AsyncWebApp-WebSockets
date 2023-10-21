@@ -2,18 +2,17 @@
     "name": "lambda-function",
     "version": "1.0.0",
     "description": "AWS Lambda Function",
-    "main": "index.js",
+    "main": "handler.js",
     "scripts": {
       "test": "echo \"No tests specified\" && exit 0",
-      "start": "node index.js"
+      "start": "node handler.js"
     },
     "dependencies": {
       "dotenv": "^10.0.0",
-      "express": "^4.17.1",
-      "aws-sdk": "^2.1101"
+      "aws-sdk": "^2.1470"
     },
     "devDependencies": {
-      "aws-sdk": "^2.1101"
+      "aws-sdk": "^2.1470"
     },
     "keywords": [
       "lambda",
