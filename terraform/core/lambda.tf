@@ -58,6 +58,16 @@ data "aws_iam_policy_document" "lambda" {
     resources = ["*"]
   }
 
+  statement {
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:GetItem",
+      "dynamodb:UpdateItem",
+    ]
+    effect    = "Allow"
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "lambda" {
@@ -83,8 +93,6 @@ resource "aws_lambda_function" "websockets_app" {
   image_uri     = "${aws_ecr_repository.repo.repository_url}@${data.aws_ecr_image.lambda_image.id}"
   package_type  = "Image"
   memory_size   = 512
-  handler       = "handler.handler"
-  runtime       = "nodejs18.x"
 
   environment {
     variables = {

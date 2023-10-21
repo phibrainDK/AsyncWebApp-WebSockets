@@ -3,5 +3,9 @@ output "lambda_app" {
 }
 
 output "app_url" {
-  value = aws_api_gateway_deployment.websocket_deployment.invoke_url
+  value = aws_apigatewayv2_deployment.websockets_agigtw_deployment.id
+}
+
+output "websockets_role_arn" {
+  value = aws_iam_role.websockets_apigtw_role.arn
 }

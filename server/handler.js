@@ -13,27 +13,35 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body);
     const action = body.action;
     const message = body.message;
-
-    if (action === 'connect') {
-        await storeConnectionId(connectionId, message);
-        return {
-            statusCode: 200,
-            body: 'Connected.',
-            message: message
-        };
-    } else if (action === 'disconnect') {
-        await deleteConnectionId(connectionId);
-        return {
-            statusCode: 200,
-            body: 'Disconnected.',
-            message: message
-        };
-    } else {
-        return {
-            statusCode: 200,
-            body: 'Message sent.',
-            message: message
-        };
+    console.log("connectionId : ", connectionId);
+    console.log("body : ", body);
+    console.log("action : ", action);
+    console.log("message : ", message);
+    try {
+        if (action === 'connect') {
+            await storeConnectionId(connectionId, message);
+            return {
+                statusCode: 200,
+                body: 'Connected.',
+                message: message
+            };
+        } else if (action === 'disconnect') {
+            await deleteConnectionId(connectionId);
+            return {
+                statusCode: 200,
+                body: 'Disconnected.',
+                message: message
+            };
+        } else {
+            return {
+                statusCode: 200,
+                body: 'Message sent.',
+                message: message
+            };
+        }
+    } catch(error) {
+        console.error(error);
+        throw error;
     }
 };
 
