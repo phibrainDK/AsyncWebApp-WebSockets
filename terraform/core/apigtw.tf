@@ -1,10 +1,10 @@
 resource "aws_apigatewayv2_api" "websockets_apigtw" {
-  name                       = "WebSocketAPI-${local.prefix}"
-  protocol_type              = "WEBSOCKET"
-  route_selection_expression = "$request.body.action"
-  description                = "Websockets API - ${local.prefix}"
-  tags                       = local.tags
-  # api_key_selection_expression = "$request.header.x-api-key"
+  name                         = "WebSocketAPI-${local.prefix}"
+  protocol_type                = "WEBSOCKET"
+  route_selection_expression   = "$request.body.action"
+  description                  = "Websockets API - ${local.prefix}"
+  tags                         = local.tags
+  api_key_selection_expression = "$request.header.x-api-key"
 }
 
 resource "aws_apigatewayv2_deployment" "websockets_agigtw_deployment" {
@@ -46,8 +46,10 @@ resource "aws_apigatewayv2_stage" "websockets_apigtw_stage" {
     aws_cloudwatch_log_group.websockets_group_cloudwatch,
     aws_apigatewayv2_api.websockets_apigtw
   ]
-  api_id = aws_apigatewayv2_api.websockets_apigtw.id
-  name   = "${local.prefix}-${local.stage}"
+  api_id        = aws_apigatewayv2_api.websockets_apigtw.id
+  name          = "${local.prefix}-${local.stage}"
+  description   = "${local.prefix} - Websockets Stage "
+  deployment_id = aws_apigatewayv2_deployment.websockets_agigtw_deployment.id
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.websockets_group_cloudwatch.arn
     format          = "{\"requestId\":\"$context.requestId\", \"extendedRequestId\":\"$context.extendedRequestId\"}"

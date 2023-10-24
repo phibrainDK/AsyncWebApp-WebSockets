@@ -29,6 +29,9 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_api_gateway_account" "apigtw_account" {
+  depends_on = [
+    aws_cloudwatch_log_group.websockets_group_cloudwatch,
+  ]
   cloudwatch_role_arn = aws_iam_role.websockets_apigtw_role.arn
 }
 
