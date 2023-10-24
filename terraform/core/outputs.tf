@@ -9,3 +9,7 @@ output "app_url" {
 output "websockets_role_arn" {
   value = aws_iam_role.websockets_apigtw_role.arn
 }
+
+output "websocket_url" {
+  value = aws_apigatewayv2_api.websockets_apigtw.api_endpoint
+}

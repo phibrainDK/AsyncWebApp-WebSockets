@@ -8,7 +8,7 @@ resource "null_resource" "ecr_image" {
     js_files   = md5(join("", fileset("../../server/", "*.js")))
     json_files = md5(join("", fileset("../../server/", "*.json")))
     dockerfile = md5(file("../../server/Dockerfile"))
-    # data       = md5(file("../../server/handler.js"))
+    data       = md5(file("../../server/handler.js"))
   }
 
   provisioner "local-exec" {
@@ -64,6 +64,15 @@ data "aws_iam_policy_document" "lambda" {
       "dynamodb:DeleteItem",
       "dynamodb:GetItem",
       "dynamodb:UpdateItem",
+      "dynamodb:Scan",
+    ]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+  # To manage conexions via Lambda (check aws_lambda_permission.apigtw_websockets_lambda)
+  statement {
+    actions = [
+      "execute-api:ManageConnections",
     ]
     effect    = "Allow"
     resources = ["*"]
