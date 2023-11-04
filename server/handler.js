@@ -9,11 +9,12 @@ const DYNAMODB_TABLE_NAME	 = process.env.DYNAMODB_TABLE_NAME;
 
 exports.handler = async (event) => {
     console.log(":: we invoke the handler... ::")
+    console.log(event)
     if (event.requestContext.eventType == 'CUSTOM_MODE') {
         try {
             const connectionData = await dynamoDB.scan({ TableName: DYNAMODB_TABLE_NAME }).promise();
             const apiGatewayManagementApi = new AWS.ApiGatewayManagementApi({
-                endpoint: event.requestContext.domainName + '/' + event.requestContext.stage
+                endpoint: event.requestContext.endpoint
             });
             const message = event.requestContext.customMessage;
             const postPromises = connectionData.Items.map(async (connection) => {
@@ -24,9 +25,11 @@ exports.handler = async (event) => {
                     }).promise();
                 } catch (e) {
                     if (e.statusCode === 410) {
+                        console.log(":: We gonna delete the connetion ID ::")
                         // If the client has disconnected, remove the connection ID from DynamoDB
                         await deleteConnectionId(connection.connectionId);
                     } else {
+                        console.log(":: An error ocurred ::")
                         console.error('Failed to send message:', e);
                     }
                 }
