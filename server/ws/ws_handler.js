@@ -4,19 +4,20 @@ AWS.config.update({
 });
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
-const DYNAMODB_TABLE_NAME	 = process.env.DYNAMODB_TABLE_NAME;
+const DYNAMODB_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
 
 
 exports.handler = async (event) => {
-    console.log(":: we invoke the handler... ::")
-    console.log(event)
-    if (event.requestContext.eventType == 'CUSTOM_MODE') {
+    console.log(":: we invoke the handler... ::");
+    console.log(event);
+    if (event.requestContext.eventType == 'NOTIFY_ALL') {
         try {
             const connectionData = await dynamoDB.scan({ TableName: DYNAMODB_TABLE_NAME }).promise();
             const apiGatewayManagementApi = new AWS.ApiGatewayManagementApi({
                 endpoint: event.requestContext.endpoint
             });
             const message = event.requestContext.customMessage;
+            console.log("message = ", message);
             const postPromises = connectionData.Items.map(async (connection) => {
                 try {
                     await apiGatewayManagementApi.postToConnection({
@@ -34,12 +35,54 @@ exports.handler = async (event) => {
                     }
                 }
             });
-        
+            // Wait for all messages to be sent before returning a response
+            await Promise.all(postPromises);
+            return { statusCode: 200, body: 'Message sent to all clients.' };
+        } catch(error) {
+            console.error(error);
+            throw error;
+        }
+    } else if (event.requestContext.eventType == 'NOTIFY_ONLY') {
+        try {
+            const userId = event.requestContext.userId;
+            const message = event.requestContext.customMessage;
+            console.log("user_id = ", userId, "message = ", message);
+            const result = await dynamoDB.query({
+                TableName: DYNAMODB_TABLE_NAME,
+                KeyConditionExpression: 'userId = :userId',
+                ExpressionAttributeValues: {
+                    ':userId': userId
+                }
+            }).promise();
+            console.log(":: result :: ", result);
+            // Obtener todas las connectionId asociadas al usuario
+            const connectionIds = result.Items.map(item => item.connectionId);
+            console.log("connections list IDs -> ", connectionIds);
+            const apiGatewayManagementApi = new AWS.ApiGatewayManagementApi({
+                endpoint: event.requestContext.endpoint
+            });
+            const postPromises = connectionIds.map(async (connectionId) => {
+                try {
+                    await apiGatewayManagementApi.postToConnection({
+                        ConnectionId: connectionId,
+                        Data: JSON.stringify({ message })
+                    }).promise();
+                } catch (e) {
+                    if (e.statusCode === 410) {
+                        console.log(":: We gonna delete the connetion ID ::");
+                        // If the client has disconnected, remove the connection ID from DynamoDB
+                        await deleteConnectionId(connectionId);
+                    } else {
+                        console.log(":: An error ocurred ::");
+                        console.error('Failed to send message:', e);
+                    }
+                }
+            });
             // Wait for all messages to be sent before returning a response
             await Promise.all(postPromises);
         
-            return { statusCode: 200, body: 'Message sent to all clients.' };
-        } catch(error) {
+            return { statusCode: 200, body: `Message sent to client = ${userId}` };
+        } catch (error) {
             console.error(error);
             throw error;
         }
@@ -52,8 +95,9 @@ exports.handler = async (event) => {
             const action_event = event.requestContext.routeKey;
             if (action_event === '$connect') {
                 const ip = event.headers["X-Forwarded-For"];
+                const userId =  event.requestContext.authorizer.principalId
                 console.log("ip is : ", ip);
-                await storeConnectionId(connectionId, ip);
+                await storeConnectionId(userId, connectionId, ip);
                 return {
                     statusCode: 200,
                     body: ip,
@@ -81,13 +125,14 @@ exports.handler = async (event) => {
     }
 };
 
-async function storeConnectionId(connectionId, message) {
+async function storeConnectionId(userId, connectionId, data) {
     const ttl = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
     const params = {
         TableName: DYNAMODB_TABLE_NAME	,
         Item: {
+            userId: userId,
             connectionId: connectionId,
-            message: message,
+            data: data,
             ttl: ttl
         }
     };
@@ -95,11 +140,23 @@ async function storeConnectionId(connectionId, message) {
 }
 
 async function deleteConnectionId(connectionId) {
-    const params = {
-        TableName: DYNAMODB_TABLE_NAME	,
-        Key: {
-            connectionId: connectionId
+    const result = await dynamoDB.query({
+        TableName: DYNAMODB_TABLE_NAME,
+        IndexName: 'ConnectionIdIndex',
+        KeyConditionExpression: 'connectionId = :connectionId',
+        ExpressionAttributeValues: {
+            ':connectionId': connectionId
         }
-    };
-    await dynamoDB.delete(params).promise();
+    }).promise();
+    console.log(result);
+    if (result.Items.length > 0) {
+        const userId = result.Items[0].userId;
+        await dynamoDB.delete({
+            TableName: DYNAMODB_TABLE_NAME,
+            Key: {
+                userId: userId,
+                connectionId: connectionId
+            }
+        }).promise();
+    }
 }

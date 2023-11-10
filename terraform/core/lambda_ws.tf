@@ -8,7 +8,7 @@ resource "null_resource" "ecr_image_ws" {
     js_files   = md5(join("", fileset("../../server/ws/", "*.js")))
     json_files = md5(join("", fileset("../../server/ws/", "*.json")))
     dockerfile = md5(file("../../server/ws/Dockerfile"))
-    data       = md5(file("../../server/ws/ws_handler.js"))
+    # data       = md5(file("../../server/ws/ws_handler.js"))
   }
 
   provisioner "local-exec" {
@@ -64,6 +64,7 @@ data "aws_iam_policy_document" "lambda_ws" {
       "dynamodb:GetItem",
       "dynamodb:UpdateItem",
       "dynamodb:Scan",
+      "dynamodb:Query",
     ]
     effect    = "Allow"
     resources = ["*"]
