@@ -8,13 +8,6 @@ resource "aws_apigatewayv2_api" "websockets_apigtw" {
 }
 
 resource "aws_apigatewayv2_deployment" "websockets_agigtw_deployment" {
-  depends_on = [
-    aws_apigatewayv2_api.websockets_apigtw,
-    aws_apigatewayv2_route.websockets_route_connect,
-    aws_apigatewayv2_route.websockets_route_disconnect,
-    aws_apigatewayv2_route.websockets_route_default,
-    aws_lambda_permission.apigtw_websockets_lambda,
-  ]
   api_id      = aws_apigatewayv2_api.websockets_apigtw.id
   description = "Websockets deployment"
 
@@ -30,6 +23,21 @@ resource "aws_apigatewayv2_deployment" "websockets_agigtw_deployment" {
   }
 }
 
+
+resource "aws_apigatewayv2_authorizer" "apigtw_authorizer" {
+  depends_on = [
+    aws_apigatewayv2_api.websockets_apigtw,
+    aws_lambda_function.websockets_auth_app,
+  ]
+  api_id                     = aws_apigatewayv2_api.websockets_apigtw.id
+  authorizer_type            = "REQUEST"
+  authorizer_uri             = aws_lambda_function.websockets_auth_app.invoke_arn
+  identity_sources           = ["route.request.header.Authorization"]
+  name                       = "${local.prefix}-apigtw-auth"
+  authorizer_credentials_arn = aws_iam_role.ws_authorizer_role.arn
+}
+
+
 resource "aws_apigatewayv2_integration" "apigtw_integration" {
   depends_on = [
     aws_apigatewayv2_api.websockets_apigtw,
@@ -44,7 +52,8 @@ resource "aws_apigatewayv2_integration" "apigtw_integration" {
 resource "aws_apigatewayv2_stage" "websockets_apigtw_stage" {
   depends_on = [
     aws_cloudwatch_log_group.websockets_group_cloudwatch,
-    aws_apigatewayv2_api.websockets_apigtw
+    aws_apigatewayv2_api.websockets_apigtw,
+    aws_apigatewayv2_deployment.websockets_agigtw_deployment,
   ]
   api_id        = aws_apigatewayv2_api.websockets_apigtw.id
   name          = "${local.prefix}-${local.stage}"
@@ -84,10 +93,13 @@ resource "aws_apigatewayv2_route" "websockets_route_connect" {
   depends_on = [
     aws_apigatewayv2_api.websockets_apigtw,
     aws_apigatewayv2_integration.apigtw_integration,
+    aws_apigatewayv2_authorizer.apigtw_authorizer,
   ]
-  api_id    = aws_apigatewayv2_api.websockets_apigtw.id
-  route_key = "$connect"
-  target    = "integrations/${aws_apigatewayv2_integration.apigtw_integration.id}"
+  authorization_type = "CUSTOM"
+  api_id             = aws_apigatewayv2_api.websockets_apigtw.id
+  route_key          = "$connect"
+  target             = "integrations/${aws_apigatewayv2_integration.apigtw_integration.id}"
+  authorizer_id      = aws_apigatewayv2_authorizer.apigtw_authorizer.id
 }
 
 resource "aws_apigatewayv2_route" "websockets_route_disconnect" {
@@ -119,4 +131,15 @@ resource "aws_lambda_permission" "apigtw_websockets_lambda" {
   # The /*/* portion grants access from any method on any resource
   # within the API Gateway "WEBSOCKETS API".
   source_arn = "${aws_apigatewayv2_api.websockets_apigtw.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "apigtw_websockets_lambda_auth" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.websockets_auth_app.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  # The /*/* portion grants access from any method on any resource
+  # within the API Gateway "WEBSOCKETS API".
+  source_arn = aws_apigatewayv2_api.websockets_apigtw.execution_arn
 }

@@ -25,11 +25,11 @@ exports.handler = async (event) => {
                     }).promise();
                 } catch (e) {
                     if (e.statusCode === 410) {
-                        console.log(":: We gonna delete the connetion ID ::")
+                        console.log(":: We gonna delete the connetion ID ::");
                         // If the client has disconnected, remove the connection ID from DynamoDB
                         await deleteConnectionId(connection.connectionId);
                     } else {
-                        console.log(":: An error ocurred ::")
+                        console.log(":: An error ocurred ::");
                         console.error('Failed to send message:', e);
                     }
                 }

@@ -2,10 +2,10 @@
     "name": "lambda-function",
     "version": "1.0.0",
     "description": "AWS Lambda Function",
-    "main": "handler.js",
+    "main": "ws_handler.js",
     "scripts": {
       "test": "echo \"No tests specified\" && exit 0",
-      "start": "node handler.js"
+      "start": "node ws_handler.js"
     },
     "dependencies": {
       "dotenv": "^10.0.0",

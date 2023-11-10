@@ -1,0 +1,26 @@
+{
+    "name": "lambda-function",
+    "version": "1.0.0",
+    "description": "AWS Lambda Function",
+    "main": "auth_handler.js",
+    "scripts": {
+        "test": "echo \"No tests specified\" && exit 0",
+        "start": "node auth_handler.js"
+    },
+    "dependencies": {
+        "aws-sdk": "^2.1470",
+        "dotenv": "^10.0.0",
+        "jsonwebtoken": "^9.0.2",
+        "aws-jwt-verify": "^3.0.0"
+    },
+    "devDependencies": {
+        "aws-sdk": "^2.1470"
+    },
+    "keywords": [
+        "lambda",
+        "node",
+        "aws"
+    ],
+    "author": "phibrain",
+    "license": "MIT"
+}
